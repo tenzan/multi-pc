@@ -13,7 +13,6 @@ Vagrant.configure("2") do |config|
   # Every Vagrant development environment requires a box. You can search for
   # boxes at https://vagrantcloud.com/search.
   config.vm.box = "bento/ubuntu-20.04"
-  config.vm.synced_folder ".", "/vagrant", disabled: true
 
   # Disable automatic box update checking. If you disable this, then
   # boxes will only be checked for updates when the user runs
@@ -45,6 +44,7 @@ Vagrant.configure("2") do |config|
   # the path on the guest to mount the folder. And the optional third
   # argument is a set of non-required options.
   # config.vm.synced_folder "../data", "/vagrant_data"
+  config.vm.synced_folder "./data", "/vagrant"
 
   # Provider-specific configuration so you can fine-tune various
   # backing providers for Vagrant. These expose provider-specific options.
@@ -52,7 +52,7 @@ Vagrant.configure("2") do |config|
   #
   config.vm.provider "virtualbox" do |vb|
     # Display the VirtualBox GUI when booting the machine
-    vb.gui = true
+    # vb.gui = true
     vb.cpus = "2"
   
     # Customize the amount of memory on the VM:
@@ -64,20 +64,20 @@ Vagrant.configure("2") do |config|
     vb0.vm.network "private_network", ip: "10.20.30.100"
   end
 
-  config.vm.define "vb1" do |vb1|
-      vb1.vm.hostname = "vb1"
-      vb1.vm.network "private_network", ip: "10.20.30.101"
-  end
+  # config.vm.define "vb1" do |vb1|
+  #     vb1.vm.hostname = "vb1"
+  #     vb1.vm.network "private_network", ip: "10.20.30.101"
+  # end
 
-  config.vm.define "vb2" do |vb2|
-      vb2.vm.hostname = "vb2"
-      vb2.vm.network "private_network", ip: "10.20.30.102"
-  end
+  # config.vm.define "vb2" do |vb2|
+  #     vb2.vm.hostname = "vb2"
+  #     vb2.vm.network "private_network", ip: "10.20.30.102"
+  # end
 
-  config.vm.define "vb3" do |vb3|
-    vb3.vm.hostname = "vb3"
-    vb3.vm.network "private_network", ip: "10.20.30.103"
-  end
+  # config.vm.define "vb3" do |vb3|
+  #   vb3.vm.hostname = "vb3"
+  #   vb3.vm.network "private_network", ip: "10.20.30.103"
+  # end
 
   #
   # View the documentation for the provider you are using for more
@@ -86,8 +86,20 @@ Vagrant.configure("2") do |config|
   # Enable provisioning with a shell script. Additional provisioners such as
   # Ansible, Chef, Docker, Puppet and Salt are also available. Please see the
   # documentation for more information about their specific syntax and use.
-  # config.vm.provision "shell", inline: <<-SHELL
-  #   apt-get update
-  #   apt-get install -y apache2
-  # SHELL
+  config.vm.provision "shell", inline: <<-SHELL
+    export DEBIAN_FRONTEND=noninteractive
+    apt-get update
+    apt-get install -y python3-pip
+    pip3 install apt-select
+    # backup existing sources.list
+    cp /etc/apt/sources.list{,.backup}
+    # find best apt repository mirror
+    apt-select --country JP
+    mv sources.list /etc/apt/sources.list
+    apt-get update
+    apt-get install -y openvpn net-tools resolvconf
+    cp /etc/netplan/01-netcfg.yaml /etc/netplan/01-netcfg.yaml.backup
+    cp /vagrant/01-netcfg.yaml /etc/netplan/01-netcfg.yaml
+    netplan apply
+  SHELL
 end
